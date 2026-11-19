@@ -35,14 +35,28 @@ function initOptions() {
   populateSelect($("#filterCategory"), CATEGORIES.filter(x=>x!=="অন্যান্য"), "সব সার্ভিস");
   populateSelect($("#filterUpazila"), UPAZILAS.filter(x=>x!=="অন্য"), "সব উপজেলা / থানা");
 }
+
 async function apiPost(payload) {
-  if (!apiReady()) throw new Error("প্রথমে script.js ফাইলে API_URL বসান।");
-  // text/plain avoids a browser CORS preflight for Apps Script web apps.
-  const response = await fetch(API_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(payload), redirect:"follow"});
-  if (!response.ok) throw new Error("সার্ভারের সঙ্গে যোগাযোগ করা যায়নি ("+response.status+")");
-  const data = await response.json();
-  if (!data.ok) throw new Error(data.message || "অনুরোধটি সম্পন্ন হয়নি।");
-  return data;
+  if (!apiReady()) {
+    throw new Error("Google Apps Script API URL পাওয়া যায়নি।");
+  }
+
+  if (payload.action !== "submit") {
+    throw new Error("এই POST পদ্ধতি শুধু Registration-এর জন্য।");
+  }
+
+  await fetch(API_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  return { sent: true };
+}
+
 }
 function apiGet(params={}) {
   return new Promise((resolve,reject)=>{
@@ -179,10 +193,10 @@ async function submitJoin(event) {
       consent:true
     };
     const result=await apiPost(payload);
-    form.reset();
-    $("#otherServiceWrap").classList.add("hidden");
-    showMessage(message,result.message||"আপনার তথ্য সফলভাবে জমা হয়েছে এবং এখনই ওয়েবসাইটে প্রকাশিত হয়েছে।","success");
-    await loadDirectory();
+form.reset();
+$("#otherServiceWrap").classList.add("hidden");
+showMessage(message,result.message||"আপনার তথ্য সফলভাবে জমা হয়েছে এবং এখনই ওয়েবসাইটে প্রকাশিত হয়েছে।","success");
+await loadDirectory();
   } catch(err) {
     showMessage(message,err.message||"তথ্য জমা দেওয়া যায়নি। আবার চেষ্টা করুন।","error");
   } finally {
